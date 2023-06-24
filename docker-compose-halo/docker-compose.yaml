@@ -1,0 +1,83 @@
+version: '3.9'
+services:
+  # 配置halo博客的镜像
+  halo:
+    restart: on-failure:3
+    image: halohub/halo:2.4
+    container_name: halo
+    depends_on:
+      halodb:
+        condition: service_healthy
+    ports:
+      - "8090:8090"
+    environment:
+      - VIRTUAL_PORT=8090
+      - VIRTUAL_HOST=sopp.top  # 你的博客地址（务必修改）
+      - LETSENCRYPT_HOST=sopp.top
+      - LETSENCRYPT_EMAIL=sopp0725@163.com # 证书所有者的邮箱，快过期时会提醒（务必修改）
+      - DB_USER=lige # h2数据库用户名，自定义（务必修改）
+      - DB_PASSWORD=Zxcv3312123. # h2数据库密码，自定义（务必修改）
+    volumes:
+      - ./halo:/root/.halo
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/actuator/health/readiness"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    command:
+      - --spring.r2dbc.url=r2dbc:pool:mysql://halodb:3306/halo
+      - --spring.r2dbc.username=root
+      # MySQL 的密码，请保证与下方 MYSQL_ROOT_PASSWORD 的变量值一致。
+      - --spring.r2dbc.password=sqw!E&WW522
+      - --spring.sql.init.platform=mysql
+      # 外部访问地址，请根据实际需要修改
+      - --halo.external-url=https://sopp.top/
+      # 初始化的超级管理员用户名
+      - --halo.security.initializer.superadminusername=admin
+      # 初始化的超级管理员密码
+      - --halo.security.initializer.superadminpassword=P@88w0rd
+  # 配置halo db
+  halodb:
+    image: mysql:8.0.31
+    container_name: halodb
+    restart: on-failure:3
+    command: 
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_general_ci
+      - --explicit_defaults_for_timestamp=true
+    volumes:
+      - ./mysql:/var/lib/mysql
+      - ./mysqlBackup:/data/mysqlBackup
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 3s
+      retries: 5
+      start_period: 30s
+    environment:
+      # 请修改此密码，并对应修改上方 Halo 服务的 SPRING_R2DBC_PASSWORD 变量值
+      - MYSQL_ROOT_PASSWORD=sqw!E&WW522
+      - MYSQL_DATABASE=halo
+  # 配置nginx
+  nginx:
+    restart: always
+    image: nginx:stable-alpine
+    container_name: halo-nginx
+    privileged: true
+    environment:
+      - TZ=Asia/Shanghai 
+    ports:
+      - "82:80"
+      - "445:443"
+    links:
+      - halo
+    depends_on:
+      - halo
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./nginx/config:/etc/nginx/conf.d
+      - ./nginx/log:/var/log/nginx
+      - ./nginx/cert/:/halo/nginx/cert
