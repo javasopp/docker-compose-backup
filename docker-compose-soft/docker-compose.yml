@@ -1,0 +1,85 @@
+version: '3.9'
+services:
+  # 配置mysql
+  mysql:
+    hostname: mysql
+    image: mysql:8.0.31-oracle
+    # 如果需要容器使用宿主机IP(内网IP)，则可以配置此项
+    # network_mode: "host" 
+    # 指定容器名称，如果不设置此参数，则由系统自动生成
+    container_name: mysql 
+    # 设置容器自启模式
+    restart: unless-stopped 
+    # 设置utf8字符集
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci 
+    environment:
+      # 设置容器时区与宿主机保持一致
+      - TZ=Asia/Shanghai 
+      # 设置root密码
+      - MYSQL_ROOT_PASSWORD=admin
+    volumes:
+      # 设置容器时区与宿主机保持一致
+      - /etc/localtime:/etc/localtime:ro 
+       # 映射数据库保存目录到宿主机，防止数据丢失
+      - "./mysql/data/:/var/lib/mysql"
+       # 映射数据库配置文件
+       # - ./mysql/config/my.cnf:/etc/mysql/my.cnf 
+    ports:
+        - "3307:3306"
+  # rabbitmq安装
+  rabbitmq:
+    image: rabbitmq:3.8.34-management
+    container_name: rabbitmq
+    restart: always
+    ports:
+      - 15672:15672
+      - 5672:5672
+    volumes:
+      - ./rabbitmq/data:/var/lib/rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin
+  # 安装redis
+  redis:
+    image: redis:3.2-stretch
+    container_name: redis
+    restart: always
+    command: redis-server /etc/redis/redis.conf --requirepass 123456
+    ports:
+     - "6379:6379"
+    volumes:
+     - ./redis/data:/data
+     - ./redis/conf/redis.conf:/etc/redis/redis.conf:rw
+  # 配置nginx
+  nginx:
+    image: nginx:stable-alpine
+    container_name: nginx
+    restart: always
+    privileged: true
+    environment:
+      - TZ=Asia/Shanghai 
+    ports:
+      - 8080:80
+      - 80:80
+      - 443:443
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./nginx/config:/etc/nginx/conf.d
+      - ./nginx/log:/var/log/nginx
+      - ./nginx/dist:/opt/dist:ro
+  # 配置minio
+  minio:
+    image: minio/minio
+    hostname: "minio"
+    ports:
+      - 9000:9000 # api 端口
+      - 9001:9001 # 控制台端口
+    environment:
+      MINIO_ACCESS_KEY: admin    #管理后台用户名
+      MINIO_SECRET_KEY: admin #管理后台密码，最小8个字符
+    volumes:
+      - ./minio/data:/data               #映射当前目录下的data目录至容器内/data目录
+      - ./minio/config:/root/.minio/     #映射配置目录
+    command: server --console-address ':9001' /data  #指定容器中的目录 /data
+    privileged: true
+    restart: always
