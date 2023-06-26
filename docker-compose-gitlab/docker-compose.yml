@@ -1,0 +1,21 @@
+version: '3.9'
+services:
+  gitlab:
+    image: 'gitlab/gitlab-ce:16.1.0-ce.0'
+    restart: always
+    hostname: '192.168.31.10'
+    container_name: gitlab
+    privileged: true
+    environment:
+      TZ: 'Asia/Shanghai'
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://192.168.31.10'
+        gitlab_rails['gitlab_shell_ssh_port'] = 1025
+    ports:
+      - '82:80'
+      - '8443:443'
+      - '1025:22'
+    volumes:
+      - ./gitlab/config:/etc/gitlab
+      - ./gitlab/data:/var/opt/gitlab
+      - ./gitlab/logs:/var/log/gitlab
