@@ -4,26 +4,27 @@ services:
   mysql:
     hostname: mysql
     image: mysql:8.0.31-oracle
-    # 如果需要容器使用宿主机IP(内网IP)，则可以配置此项
-    # network_mode: "host" 
     # 指定容器名称，如果不设置此参数，则由系统自动生成
     container_name: mysql 
     # 设置容器自启模式
-    restart: unless-stopped 
+    restart: always
     # 设置utf8字符集
-    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci 
+    command: "mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_bin"
     environment:
+      - "--wait-timeout=28800"
       # 设置容器时区与宿主机保持一致
-      - TZ=Asia/Shanghai 
+      - "TZ=Asia/Shanghai"
+      # 配置所有均可访问
+      - "MYSQL_ROOT_HOST=%"
+      # 配置数据库名称
+      - "MYSQL_DATABASE=test"
       # 设置root密码
-      - MYSQL_ROOT_PASSWORD=admin
+      - "MYSQL_ROOT_PASSWORD=Zxcv123.00"
     volumes:
       # 设置容器时区与宿主机保持一致
-      - /etc/localtime:/etc/localtime:ro 
+      - /etc/localtime:/etc/localtime:ro
        # 映射数据库保存目录到宿主机，防止数据丢失
-      - "./mysql/data/:/var/lib/mysql"
-       # 映射数据库配置文件
-       # - ./mysql/config/my.cnf:/etc/mysql/my.cnf 
+      - ./mysql/data:/var/lib/mysql
     ports:
         - "3307:3306"
   # rabbitmq安装
@@ -38,13 +39,13 @@ services:
       - ./rabbitmq/data:/var/lib/rabbitmq
     environment:
       - RABBITMQ_DEFAULT_USER=admin
-      - RABBITMQ_DEFAULT_PASS=admin
+      - RABBITMQ_DEFAULT_PASS=Zxcv123.00
   # 安装redis
   redis:
     image: redis:3.2-stretch
     container_name: redis
     restart: always
-    command: redis-server /etc/redis/redis.conf --requirepass 123456
+    command: redis-server /etc/redis/redis.conf --requirepass Zxcv123.00
     ports:
      - "6379:6379"
     volumes:
@@ -59,7 +60,6 @@ services:
     environment:
       - TZ=Asia/Shanghai 
     ports:
-      - 8080:80
       - 80:80
       - 443:443
     volumes:
@@ -76,7 +76,7 @@ services:
       - 9001:9001 # 控制台端口
     environment:
       MINIO_ACCESS_KEY: admin    #管理后台用户名
-      MINIO_SECRET_KEY: admin #管理后台密码，最小8个字符
+      MINIO_SECRET_KEY: Zxcv123.00 #管理后台密码，最小8个字符
     volumes:
       - ./minio/data:/data               #映射当前目录下的data目录至容器内/data目录
       - ./minio/config:/root/.minio/     #映射配置目录
